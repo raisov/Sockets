@@ -118,7 +118,7 @@ public enum InternetAddressesError: Error, CustomStringConvertible {
 
     /// A textual description of the error.
     public var description: String {
-        return String(validatingUTF8: gai_strerror(self.code)) ?? "unexpected getaddrinfo return \(code)"
+        return String(validatingCString: gai_strerror(self.code)) ?? "unexpected getaddrinfo return \(code)"
     }
 }
 
