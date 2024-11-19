@@ -104,7 +104,7 @@ public enum SocketError: Error, CustomStringConvertible {
 
     /// A textual description of the error
     public var description: String {
-        return String(validatingUTF8: strerror(self.code)) ?? "unexpected POSIX error code \(code)"
+        return String(validatingCString: strerror(self.code)) ?? "unexpected POSIX error code \(code)"
     }
 }
 

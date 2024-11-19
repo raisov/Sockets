@@ -130,7 +130,8 @@ extension Socket {
 
     @discardableResult
     public func sendTo(_ address: InternetAddress, data: Data, flags: Int32 = 0) throws -> Int {
-        return try data.withUnsafeBytes {(p: UnsafePointer<Int8>) in
+        return try data.withUnsafeBytes {
+            let p = $0.baseAddress!.assumingMemoryBound(to: Int8.self)
             return try address.withSockaddrPointer {sa_p, length in
                 try bsd(Darwin.sendto(self.handle, p, data.count, flags, sa_p, length))
             }
@@ -139,8 +140,9 @@ extension Socket {
 
     @discardableResult
     public func send(_ data: Data, flags: Int32 = 0) throws -> Int {
-        return try data.withUnsafeBytes {(p: UnsafePointer<Int8>) in
-            try bsd(Darwin.send(self.handle, p, data.count, flags))
+        return try data.withUnsafeBytes {
+            let p = $0.baseAddress!.assumingMemoryBound(to: Int8.self)
+            return try bsd(Darwin.send(self.handle, p, data.count, flags))
         }
     }
 }
