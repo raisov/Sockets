@@ -153,7 +153,7 @@ extension in_addr : IPAddress {
     }
 }
 
-extension in_addr : Equatable {
+extension in_addr: @retroactive Equatable {
     public static func == (lhs: in_addr, rhs: in_addr) -> Bool {
         return lhs.s_addr == rhs.s_addr
     }
@@ -171,7 +171,7 @@ extension in6_addr : IPAddress {
     }
 }
 
-extension in6_addr : Equatable {
+extension in6_addr: @retroactive Equatable {
     public static func == (lhs: in6_addr, rhs: in6_addr) -> Bool {
         return lhs.__u6_addr.__u6_addr32 == rhs.__u6_addr.__u6_addr32
     }

@@ -5,7 +5,7 @@
 
 import Darwin.POSIX
 
-extension in_addr : CustomStringConvertible {
+extension in_addr: @retroactive CustomStringConvertible {
     /// A textual representation of IP4 address.
     public var description: String {
         var ina = self
@@ -14,14 +14,14 @@ extension in_addr : CustomStringConvertible {
     }
 }
 
-extension sockaddr_in : CustomStringConvertible {
+extension sockaddr_in: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in`.
     public var description: String {
         return "\(self.sin_addr)" + (self.sin_port == 0 ? "" : ":\(self.port)")
     }
 }
 
-extension in6_addr : CustomStringConvertible {
+extension in6_addr: @retroactive CustomStringConvertible {
     /// A textual representation of IP6 address.
     public var description: String {
         var in6a = self
@@ -30,7 +30,7 @@ extension in6_addr : CustomStringConvertible {
     }
 }
 
-extension sockaddr_in6 : CustomStringConvertible {
+extension sockaddr_in6: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in6`.
     public var description: String {
         return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(self.port)")

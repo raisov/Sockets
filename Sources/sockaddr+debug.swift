@@ -5,7 +5,7 @@
 
 import Darwin.POSIX
 
-extension sockaddr_in : CustomDebugStringConvertible {
+extension sockaddr_in: @retroactive CustomDebugStringConvertible {
     /// A textual representation of `sockaddr_in`, suitable for debugging.
     public var debugDescription: String {
         return (
@@ -22,7 +22,7 @@ extension sockaddr_in : CustomDebugStringConvertible {
     }
 }
 
-extension sockaddr_in6 : CustomDebugStringConvertible {
+extension sockaddr_in6: @retroactive CustomDebugStringConvertible {
     /// A textual representation of `sockaddr_in6`, suitable for debugging.
     public var debugDescription: String {
         return (
