@@ -1,6 +1,6 @@
 //  sockaddr.swift
 //  Simplenet SocketAddress module
-//  Copyright (c) 2018 Vladimir Raisov. All rights reserved.
+//  Copyright (c) 2018 Vladimir Raisov
 //  Licensed under MIT License
 
 import Darwin.POSIX
@@ -165,10 +165,15 @@ extension in6_addr : IPAddress {
     public var isWildcard: Bool {return self == in6addr_any}
     public var isLoopback: Bool {return self == in6addr_loopback}
     public var isMulticast: Bool {return self.__u6_addr.__u6_addr8.0 == 0xff}
+    
 
     public func with(port: UInt16 = 0) -> InternetAddress {
         return sockaddr_in6(self, port: port)
     }
+}
+
+extension in6_addr {
+    public var isLinkLocal: Bool { (self.__u6_addr.__u6_addr16.0 & 0xc0fe) == 0x80fe}
 }
 
 extension in6_addr: @retroactive Equatable {
@@ -319,6 +324,40 @@ extension UnsafeMutablePointer where Pointee == sockaddr_dl {
 
 // MARK: sockaddr extensions
 extension UnsafePointer where Pointee == sockaddr {
+    public var `in`: sockaddr_in? {
+        guard pointee.sa_family == AF_INET else { return nil }
+        assert(pointee.sa_len <= MemoryLayout<sockaddr_in>.size, "malformed sockaddr")
+        guard pointee.sa_len <= MemoryLayout<sockaddr_in>.size else { return nil }
+        assert(pointee.sa_len > MemoryLayout<sockaddr_in>.offset(of: \.sin_addr)!, "malformed sockaddr")
+        guard pointee.sa_len > MemoryLayout<sockaddr_in>.offset(of: \.sin_addr)! else { return nil }
+        var sin = sockaddr_in()
+        return withUnsafeMutablePointer(to: &sin) {
+            let sin_p = UnsafeMutableRawPointer($0)
+            sin_p.copyMemory(from: self, byteCount: Int(pointee.sa_len))
+            sin_p.assumingMemoryBound(to: sockaddr_in.self).pointee.sin_len = numericCast(MemoryLayout<sockaddr_in>.size)
+            return sin_p.assumingMemoryBound(to: sockaddr_in.self).pointee
+        }
+    }
+    
+    public var in6: sockaddr_in6? {
+        guard pointee.sa_family == AF_INET6 else { return nil }
+        assert(pointee.sa_len == MemoryLayout<sockaddr_in6>.size, "malformed sockaddr")
+        guard pointee.sa_len <= MemoryLayout<sockaddr_in6>.size else { return nil }
+        var sin6 = sockaddr_in6()
+        return self.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) {
+            $0.pointee
+        }
+    }
+    
+    public var dl: sockaddr_dl? {
+        guard pointee.sa_family == AF_LINK else { return nil }
+        assert(pointee.sa_len >= MemoryLayout<sockaddr_dl>.size, "malformed sockaddr")
+        guard pointee.sa_len >= MemoryLayout<sockaddr_dl>.size else { return nil }
+        var sdl = sockaddr_dl()
+        return self.withMemoryRebound(to: sockaddr_dl.self, capacity: 1) {
+            $0.pointee
+        }
+    }
     private func value<A: InternetAddress>() -> A? {
         return self.withMemoryRebound(to: A.self, capacity: 1) {
             guard $0.pointee.isWellFormed else {return nil}
@@ -340,6 +379,37 @@ extension UnsafePointer where Pointee == sockaddr {
 extension UnsafeMutablePointer where Pointee == sockaddr {
     public var internetAddress: InternetAddress? {
         return UnsafePointer(self).internetAddress
+    }
+    public var `in`: sockaddr_in? {
+        return UnsafePointer(self).in
+    }
+    
+    public var in6: sockaddr_in6? {
+        return UnsafePointer(self).in6
+    }
+    
+    public var dl: sockaddr_dl? {
+        return UnsafePointer(self).dl
+    }
+}
+
+extension sockaddr_storage {
+    public var `in`: sockaddr_in? {
+        withUnsafeBytes(of: self) {
+            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).in
+        }
+    }
+    
+    public var in6: sockaddr_in6? {
+        withUnsafeBytes(of: self) {
+            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).in6
+        }
+    }
+
+    public var dl: sockaddr_dl? {
+        withUnsafeBytes(of: self) {
+            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).dl
+        }
     }
 }
 
