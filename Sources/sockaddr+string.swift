@@ -17,7 +17,7 @@ extension in_addr: @retroactive CustomStringConvertible {
 extension sockaddr_in: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in`.
     public var description: String {
-        return "\(self.sin_addr)" + (self.sin_port == 0 ? "" : ":\(self.port)")
+        return "\(self.sin_addr)" + (self.sin_port == 0 ? "" : ":\(self.port.littleEndian)")
     }
 }
 
@@ -33,7 +33,7 @@ extension in6_addr: @retroactive CustomStringConvertible {
 extension sockaddr_in6: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in6`.
     public var description: String {
-        return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(self.port)")
+        return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(self.port.littleEndian)")
     }
 }
 
@@ -129,8 +129,12 @@ public enum InternetAddressesError: Error, CustomStringConvertible {
 ///     - numericHost: if `true`, no DNS lookup executed for `host`, only IP addresses accepted.
 /// - Returns: the `InternetAddress` array for the host:port pair.
 /// - Throws: `InternetAddressesError` or `SocketError`
-public func getInternetAddresses(for host: String? = nil, port: UInt16 = 0, numericHost: Bool = false) throws -> [InternetAddress] {
-    var addresses = [InternetAddress]()
+public func getInternetAddresses(
+    for host: String? = nil,
+    port: UInt16 = 0,
+    numericHost: Bool = false
+) throws -> [sockaddr_storage] {
+    var addresses = [sockaddr_storage]()
     var hints = addrinfo()
     hints.ai_flags = AI_DEFAULT | AI_NUMERICSERV | (numericHost ? AI_NUMERICHOST : 0)
     hints.ai_family = 0
@@ -161,8 +165,14 @@ public func getInternetAddresses(for host: String? = nil, port: UInt16 = 0, nume
         }
     }
     while let p = ai_p {
-        if let address = p.pointee.ai_addr.internetAddress {
-            addresses.append(address)
+        if let sa_p = p.pointee.ai_addr {
+            var ss = sockaddr_storage()
+            withUnsafeMutablePointer(to: &ss) {
+                let ss_p = UnsafeMutableRawPointer($0)
+                ss_p.copyMemory(from: sa_p, byteCount: min(Int(sa_p.pointee.sa_len), Int(SOCK_MAXADDRLEN)))
+                return ss_p.assumingMemoryBound(to: sockaddr_storage.self).pointee
+            }
+            addresses.append(ss)
         }
         ai_p = p.pointee.ai_next
     }
