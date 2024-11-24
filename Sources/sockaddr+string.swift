@@ -17,7 +17,7 @@ extension in_addr: @retroactive CustomStringConvertible {
 extension sockaddr_in: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in`.
     public var description: String {
-        return "\(self.sin_addr)" + (self.sin_port == 0 ? "" : ":\(self.port.littleEndian)")
+        return "\(sin_addr)" + (sin_port == 0 ? "" : ":\(sin_port.littleEndian)")
     }
 }
 
@@ -33,7 +33,7 @@ extension in6_addr: @retroactive CustomStringConvertible {
 extension sockaddr_in6: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in6`.
     public var description: String {
-        return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(self.port.littleEndian)")
+        return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(sin6_port.littleEndian)")
     }
 }
 
@@ -127,7 +127,7 @@ public enum InternetAddressesError: Error, CustomStringConvertible {
 ///     - host: the hostname or IP addrress for host.
 ///     - port: the port number.
 ///     - numericHost: if `true`, no DNS lookup executed for `host`, only IP addresses accepted.
-/// - Returns: the `InternetAddress` array for the host:port pair.
+/// - Returns: the `sockaddr_storage` array for the host:port pair.
 /// - Throws: `InternetAddressesError` or `SocketError`
 public func getInternetAddresses(
     for host: String? = nil,

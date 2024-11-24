@@ -1,6 +1,6 @@
 //  Socket.swift
-//  Simplenet Socket module
-//  Copyright (c) 2018 Vladimir Raisov. All rights reserved.
+//  Sockets package
+//  Copyright (c) 2018 Vladimir Raisov
 //  Licensed under MIT License
 
 import Darwin.POSIX
@@ -94,47 +94,75 @@ public class Socket {
 }
 
 extension Socket {
+    /// Executes functions that require a pointer to memory where sockaddr will be placed;
+    /// such as `getsockaddr` or `recvfrom`.
+    /// - Rarameters:
+    ///     - body: Closure that takes a pointer to the memory buffer to place
+    ///             the returned sockaddr and a pointer to socklen_t variable
+    ///             to place returned sockaddr length.
+    /// - Returns: `sockaddr_storage` with results of `body` execution.
+    public func execute(_ body: (
+        UnsafeMutablePointer<sockaddr>,
+        UnsafeMutablePointer<socklen_t>
+    ) throws -> Int32) rethrows -> sockaddr_storage {
+        var ss = sockaddr_storage()
+        var length = socklen_t(MemoryLayout<sockaddr_storage>.size)
+        try withUnsafeMutableBytes(of: &ss) {
+            let sa_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr.self)
+            try body(sa_p, &length)
+        }
+        assert(ss.ss_len == length)
+        return ss
+    }
+    
+    /// Executes functions with a sockaddr pointer as input parameter;
+    /// such as `bind`, `connect` or `sendto`.
+    /// - parameter body: A closure that takes a sockaddr pointer and sockaddr length as input parameters.
+    /// - Returns: the return value of the `body`.
+    @discardableResult
+    public func withSockaddrPointer<ResultType>(
+        to ss: sockaddr_storage,
+        body: (
+            UnsafePointer<sockaddr>
+        ) throws -> ResultType) rethrows -> ResultType {
+            var sa = ss
+            return try withUnsafeBytes(of: &sa) {
+                let sa_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr.self)
+                return try body(sa_p)
+            }
+        }
+        
+    
     /// Address bound to socket
-    public var localAddress: InternetAddress? {
-        get {
-            var ss = sockaddr_storage()
-            return (try? withSockaddrMutablePointer(to: &ss) {(sa_p, length_p) in
-                try bsd(getsockname(self.handle, sa_p, length_p))
-                return sa_p.internetAddress
-            }).flatMap{$0}
+    public var localAddress: sockaddr_storage? {
+        try? execute { sa_p, length_p in
+            try bsd(getsockname(self.handle, sa_p, length_p))
         }
     }
 
     ///address to which the socket is connected
-    public var remoteAddress: InternetAddress? {
-        get {
-            var ss = sockaddr_storage()
-            return (try? withSockaddrMutablePointer(to: &ss) {(sa_p, length_p) in
-                try bsd(getpeername(self.handle, sa_p, length_p))
-                return sa_p.internetAddress
-                }).flatMap{$0}
+    public var remoteAddress: sockaddr_storage? {
+        try? execute { sa_p, length_p in
+            try bsd(getpeername(self.handle, sa_p, length_p))
         }
     }
 
-    public func bind(_ address: InternetAddress) throws {
-        try address.withSockaddrPointer {sa_p, length in
-            try bsd(Darwin.bind(self.handle, sa_p, length))
-        }
+    public func bind(_ address: UnsafePointer<sockaddr>) throws {
+        let length = socklen_t(address.pointee.sa_len)
+        try bsd(Darwin.bind(self.handle, address, length))
     }
 
-    public func connectTo(_ address: InternetAddress) throws {
-        try address.withSockaddrPointer {sa_p, length in
-            try bsd(Darwin.connect(self.handle, sa_p, length))
-        }
+    public func connectTo(_ address: UnsafePointer<sockaddr>) throws {
+        let length = socklen_t(address.pointee.sa_len)
+        try bsd(Darwin.connect(self.handle, address, length))
     }
 
     @discardableResult
-    public func sendTo(_ address: InternetAddress, data: Data, flags: Int32 = 0) throws -> Int {
+    public func sendTo(_ address: UnsafePointer<sockaddr>, data: Data, flags: Int32 = 0) throws -> Int {
         return try data.withUnsafeBytes {
             let p = $0.baseAddress!.assumingMemoryBound(to: Int8.self)
-            return try address.withSockaddrPointer {sa_p, length in
-                try bsd(Darwin.sendto(self.handle, p, data.count, flags, sa_p, length))
-            }
+            let length = socklen_t(address.pointee.sa_len)
+            return try bsd(Darwin.sendto(self.handle, p, data.count, flags, address, length))
         }
     }
 
@@ -237,17 +265,47 @@ extension Socket {
 }
 
 extension Socket {
-    /// Join to multicast group.
+    /// Join to  multicast group.
     /// - Parameters:
-    ///     - group: address of group to join.
+    ///     - group: IP address of group to join.
     ///     - index: index of the interface through which multicast messages will be received;
-    ///         if 0, default interface will be used.
-    public func joinToMulticast(_ group: IPAddress, interfaceIndex index: Int32 = 0) throws {
+    ///       if 0, default interface will be used.
+    public func joinToMulticast(_ group: in_addr, interfaceIndex index: Int32 = 0) throws {
         assert(group.isMulticast)
-        let level = type(of: group).family == .ip4 ? IPPROTO_IP : IPPROTO_IPV6
-        var req = group_req(gr_interface: UInt32(index), gr_group: sockaddr_storage(group.with(port: 0)))
-        try bsd(setsockopt(self.handle,
-                           level, MCAST_JOIN_GROUP,
-                           &req, socklen_t(MemoryLayout<group_req>.size)))
+        try joinToMulticast(
+            sockaddr_storage(sockaddr_in(group, port: 0)),
+            interfaceIndex: Int32(0)
+        )
+    }
+    
+    /// Join to IPv6 multicast group.
+    /// - Parameters:
+    ///     - group: IPv6 address of group to join.
+    ///     - index: index of the interface through which multicast messages will be received;
+    ///       if 0, default interface will be used.
+    public func joinToMulticast(_ group: in6_addr, interfaceIndex index: Int32 = 0) throws {
+        assert(group.isMulticast)
+        try joinToMulticast(
+            sockaddr_storage(sockaddr_in6(group, port: 0)),
+            interfaceIndex: Int32(0)
+        )
+    }
+    
+    private func joinToMulticast(
+        _ ss: sockaddr_storage,
+        interfaceIndex index: Int32 = 0
+    ) throws {
+        assert(ss.ss_family == AF_INET || ss.ss_family == AF_INET6)
+        let level = ss.ss_family == AF_INET6 ? IPPROTO_IPV6 : IPPROTO_IP
+        var req = group_req(gr_interface: UInt32(index), gr_group: ss)
+        try bsd(
+            setsockopt(
+                self.handle,
+                level,
+                MCAST_JOIN_GROUP,
+                &req,
+                socklen_t(MemoryLayout<group_req>.size)
+            )
+        )
     }
 }
