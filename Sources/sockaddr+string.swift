@@ -143,7 +143,7 @@ public func getInternetAddresses(
     var addrinfoListHead: UnsafeMutablePointer<addrinfo>?
     let res = withUnsafeMutablePointer(to: &addrinfoListHead) {(ai_p) -> Int32 in
         String(port).withCString {port_p in
-            if let host = host {
+            if let host {
                 return host.withCString {host_p in
                     getaddrinfo(host_p, port_p, &hints, ai_p)
                 }
