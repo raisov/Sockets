@@ -33,6 +33,37 @@ public class Socket {
             }
         }
     }
+    
+    public enum AddressFamily: RawRepresentable {
+        /// Unix pipe
+        case unix
+        /// IPv4
+        case inet
+        /// IPv6
+        case inet6
+        /// Link layer interface
+        case link
+    
+        public init?(rawValue: Int32) {
+            switch rawValue {
+            case AF_UNIX: self = .unix
+            case AF_INET: self = .inet
+            case AF_INET6: self = .inet6
+            case AF_LINK: self = .link
+            default:
+                return nil
+            }
+        }
+    
+        public var rawValue: Int32 {
+            switch self {
+            case .unix: return AF_UNIX
+            case .inet: return AF_INET
+            case .inet6: return AF_INET6
+            case .link: return AF_LINK
+            }
+        }
+    }
 
     public enum `Protocol`: RawRepresentable {
         case tcp, udp, icmp, icmpv6
@@ -77,7 +108,7 @@ public class Socket {
     ///                 determined by the values of `type` and` family`.
     /// - Throws: SocketError.
     /// - SeeAlso: man 2 socket.
-    public init(family: SocketAddressFamily, type: SocketType = .datagram, protocol: Protocol? = nil) throws {
+    public init(family: AddressFamily, type: SocketType = .datagram, protocol: Protocol? = nil) throws {
         self.handle = try bsd(Darwin.socket(family.rawValue, type.rawValue, `protocol`?.rawValue ?? 0))
     }
 
@@ -114,24 +145,6 @@ extension Socket {
         assert(ss.ss_len == length)
         return ss
     }
-    
-    /// Executes functions with a sockaddr pointer as input parameter;
-    /// such as `bind`, `connect` or `sendto`.
-    /// - parameter body: A closure that takes a sockaddr pointer and sockaddr length as input parameters.
-    /// - Returns: the return value of the `body`.
-    @discardableResult
-    public func withSockaddrPointer<ResultType>(
-        to ss: sockaddr_storage,
-        body: (
-            UnsafePointer<sockaddr>
-        ) throws -> ResultType) rethrows -> ResultType {
-            var sa = ss
-            return try withUnsafeBytes(of: &sa) {
-                let sa_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr.self)
-                return try body(sa_p)
-            }
-        }
-        
     
     /// Address bound to socket
     public var localAddress: sockaddr_storage? {
