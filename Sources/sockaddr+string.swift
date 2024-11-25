@@ -17,7 +17,7 @@ extension in_addr: @retroactive CustomStringConvertible {
 extension sockaddr_in: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in`.
     public var description: String {
-        return "\(sin_addr)" + (sin_port == 0 ? "" : ":\(sin_port.littleEndian)")
+        return "\(sin_addr)" + (sin_port == 0 ? "" : ":\(sin_port.byteSwapped)")
     }
 }
 
@@ -33,7 +33,7 @@ extension in6_addr: @retroactive CustomStringConvertible {
 extension sockaddr_in6: @retroactive CustomStringConvertible {
     /// A textual representation of `sockaddr_in6`.
     public var description: String {
-        return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(sin6_port.littleEndian)")
+        return "[\(self.sin6_addr)" + (self.sin6_port == 0 ? "]" : "]:\(sin6_port.byteSwapped)")
     }
 }
 

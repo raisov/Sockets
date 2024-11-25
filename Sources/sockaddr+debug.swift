@@ -15,7 +15,7 @@ extension sockaddr_in: @retroactive CustomDebugStringConvertible {
             family: \(self.sin_family) \
             (\(self.sin_family == AF_INET ? "AF_INET" : " (incorrect!)")), \
             addr: \(self.sin_addr), \
-            port: \(self.sin_port.littleEndian)\
+            port: \(self.sin_port.byteSwapped)\
             }
             """
         )
@@ -32,7 +32,7 @@ extension sockaddr_in6: @retroactive CustomDebugStringConvertible {
             family: \(self.sin6_family) \
             (\(self.sin6_family == AF_INET6 ? "AF_INET6" : "incorrect!")), \
             addr: \(self.sin6_addr), \
-            port: \(self.sin6_port.littleEndian), \
+            port: \(self.sin6_port.byteSwapped), \
             scope_id: \(self.sin6_scope_id), \
             flowinfo: \(self.sin6_flowinfo)\
             }
