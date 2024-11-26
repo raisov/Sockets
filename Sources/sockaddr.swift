@@ -8,9 +8,12 @@ import Darwin.POSIX
 // MARK: - IP address extensions
 
 extension in_addr {
-    public static var family: Int32 { AF_INET }
-    public var isWildcard: Bool {return self.s_addr == INADDR_ANY.bigEndian}
-    public var isLoopback: Bool {return self.s_addr == INADDR_LOOPBACK.bigEndian}
+    public static let family = AF_INET
+    public static let wildcard = Self(s_addr: INADDR_ANY.bigEndian)
+    public static let loopback = Self(s_addr: INADDR_LOOPBACK.bigEndian)
+    public static let broadcast = Self(s_addr: INADDR_BROADCAST.bigEndian)
+    public var isWildcard: Bool {self == Self.wildcard}
+    public var isLoopback: Bool {self == Self.loopback}
     public var isMulticast: Bool {return (self.s_addr & 0xf0) == 0xe0}
 
     public func with(port: UInt16 = 0) -> sockaddr_in {
@@ -25,7 +28,9 @@ extension in_addr: @retroactive Equatable {
 }
 
 extension in6_addr {
-    public static var family: Int32 { AF_INET6 }
+    public static let family = AF_INET6
+    public static let wildcard = in6addr_any
+    public static let loopback = in6addr_loopback
     public var isWildcard: Bool {return self == in6addr_any}
     public var isLoopback: Bool {return self == in6addr_loopback}
     public var isMulticast: Bool {return self.__u6_addr.__u6_addr8.0 == 0xff}
@@ -47,7 +52,7 @@ extension in6_addr: @retroactive Equatable {
 // MARK: - sockaddr_* extensions
 
 extension sockaddr_in {
-    public static var family: Int32 { in_addr.family }
+    public static let family = in_addr.family
     public var family: Int32 { numericCast(sin_family) }
     
     public var isWellFormed: Bool {
@@ -65,7 +70,7 @@ extension sockaddr_in {
     public init(_ address: in_addr = in_addr(s_addr: INADDR_ANY), port: UInt16) {
         self.init(sin_len: __uint8_t(MemoryLayout<sockaddr_in>.size),
                   sin_family: sa_family_t(Self.family),
-                  sin_port: port.byteSwapped,
+                  sin_port: port.bigEndian,
                   sin_addr: address,
                   sin_zero: (0, 0, 0, 0, 0, 0, 0, 0)
         )
@@ -73,7 +78,7 @@ extension sockaddr_in {
 }
 
 extension sockaddr_in6 {
-    public static var family: Int32 { in6_addr.family }
+    public static let family = in6_addr.family
     public var family: Int32 { numericCast(sin6_family) }
     
     public var isWellFormed: Bool {
@@ -90,7 +95,7 @@ extension sockaddr_in6 {
     public init(_ address: in6_addr = in6addr_any, port: UInt16, flowinfo: UInt32 = 0, scope: UInt32 = 0) {
         self.init(sin6_len: __uint8_t(MemoryLayout<sockaddr_in6>.size),
                   sin6_family: sa_family_t(Self.family),
-                  sin6_port: port.byteSwapped,
+                  sin6_port: port.bigEndian,
                   sin6_flowinfo: flowinfo,
                   sin6_addr: address,
                   sin6_scope_id: scope
@@ -99,7 +104,7 @@ extension sockaddr_in6 {
 }
 
 extension sockaddr_dl {
-    public static var family: Int32 { AF_LINK }
+    public static let family = AF_LINK
     public var family: Int32 { numericCast(sdl_family) }
     public var isWellFormed: Bool {
         family == Self.family &&
