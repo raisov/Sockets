@@ -120,7 +120,7 @@ public class Socket {
     }
 
     deinit {
-        Darwin.close(self.handle)
+        close(self.handle)
     }
 }
 
@@ -283,11 +283,11 @@ extension Socket {
     ///     - group: IP address of group to join.
     ///     - index: index of the interface through which multicast messages will be received;
     ///       if 0, default interface will be used.
-    public func joinToMulticast(_ group: in_addr, interfaceIndex index: Int32 = 0) throws {
+    public func joinToMulticast(_ group: in_addr, interfaceIndex index: Int32) throws {
         assert(group.isMulticast)
         try joinToMulticast(
             sockaddr_storage(sockaddr_in(group, port: 0)),
-            interfaceIndex: Int32(0)
+            interfaceIndex: index
         )
     }
     
@@ -296,11 +296,11 @@ extension Socket {
     ///     - group: IPv6 address of group to join.
     ///     - index: index of the interface through which multicast messages will be received;
     ///       if 0, default interface will be used.
-    public func joinToMulticast(_ group: in6_addr, interfaceIndex index: Int32 = 0) throws {
+    public func joinToMulticast(_ group: in6_addr, interfaceIndex index: Int32) throws {
         assert(group.isMulticast)
         try joinToMulticast(
             sockaddr_storage(sockaddr_in6(group, port: 0)),
-            interfaceIndex: Int32(0)
+            interfaceIndex: index
         )
     }
     
