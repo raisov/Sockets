@@ -158,7 +158,7 @@ extension UnsafeMutablePointer where Pointee == sockaddr_dl {
 // MARK: - sockaddr extensions
 
 extension UnsafePointer where Pointee == sockaddr {
-    public var `in`: sockaddr_in? {
+    public var sin: sockaddr_in? {
         guard withMemoryRebound(to: sockaddr_in.self, capacity: 1, {
             $0.pointee.isWellFormed
         }) else { return nil }
@@ -172,7 +172,7 @@ extension UnsafePointer where Pointee == sockaddr {
         }
     }
     
-    public var in6: sockaddr_in6? {
+    public var sin6: sockaddr_in6? {
         self.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) {
             $0.pointee.isWellFormed ? $0.pointee : nil
         }
@@ -186,12 +186,12 @@ extension UnsafePointer where Pointee == sockaddr {
 }
 
 extension UnsafeMutablePointer where Pointee == sockaddr {
-    public var `in`: sockaddr_in? {
-        return UnsafePointer(self).in
+    public var sin: sockaddr_in? {
+        return UnsafePointer(self).sin
     }
     
-    public var in6: sockaddr_in6? {
-        return UnsafePointer(self).in6
+    public var sin6: sockaddr_in6? {
+        return UnsafePointer(self).sin6
     }
     
     public var dl: sockaddr_dl? {
@@ -220,15 +220,15 @@ extension sockaddr_storage {
 }
 
 extension sockaddr_storage {
-    public var `in`: sockaddr_in? {
+    public var sin: sockaddr_in? {
         withUnsafeBytes(of: self) {
-            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).in
+            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).sin
         }
     }
     
-    public var in6: sockaddr_in6? {
+    public var sin6: sockaddr_in6? {
         withUnsafeBytes(of: self) {
-            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).in6
+            $0.baseAddress?.assumingMemoryBound(to: sockaddr.self).sin6
         }
     }
 
