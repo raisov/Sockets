@@ -37,6 +37,19 @@ extension sockaddr_in6: @retroactive CustomStringConvertible {
     }
 }
 
+extension sockaddr_storage: @retroactive CustomStringConvertible {
+    public var description: String {
+        if let sin {
+            sin.description
+        } else if let sin6 {
+            sin6.description
+        } else {
+            "sockaddr family\(ss_family) length (\(ss_len)"
+        }
+        
+    }
+}
+
 extension in_addr {
     /// Creates `in_addr` struct initialized by given textual representation of IP address.
     /// ```
