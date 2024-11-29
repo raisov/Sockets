@@ -125,27 +125,6 @@ public class Socket {
 }
 
 extension Socket {
-    /// Executes functions that require a pointer to memory where sockaddr will be placed;
-    /// such as `getsockaddr` or `recvfrom`.
-    /// - Rarameters:
-    ///     - body: Closure that takes a pointer to the memory buffer to place
-    ///             the returned sockaddr and a pointer to socklen_t variable
-    ///             to place returned sockaddr length.
-    /// - Returns: `sockaddr_storage` with results of `body` execution.
-    public func execute(_ body: (
-        UnsafeMutablePointer<sockaddr>,
-        UnsafeMutablePointer<socklen_t>
-    ) throws -> Int32) rethrows -> sockaddr_storage {
-        var ss = sockaddr_storage()
-        var length = socklen_t(MemoryLayout<sockaddr_storage>.size)
-        try withUnsafeMutableBytes(of: &ss) {
-            let sa_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr.self)
-            try body(sa_p, &length)
-        }
-        assert(ss.ss_len == length)
-        return ss
-    }
-    
     /// Address bound to socket
     public var localAddress: sockaddr_storage? {
         try? sockaddr_storage { sa_p, length_p in
