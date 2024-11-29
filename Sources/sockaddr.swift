@@ -204,7 +204,7 @@ extension UnsafeMutablePointer where Pointee == sockaddr {
 extension sockaddr_storage {
     public init(_ sin: sockaddr_in) {
         self.init()
-        try withUnsafeMutableBytes(of: &self) {
+        withUnsafeMutableBytes(of: &self) {
             let sin_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr_in.self)
             sin_p.pointee = sin
         }
@@ -212,10 +212,29 @@ extension sockaddr_storage {
     
     public init(_ sin6: sockaddr_in6) {
         self.init()
-        try withUnsafeMutableBytes(of: &self) {
+        withUnsafeMutableBytes(of: &self) {
             let sin6_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr_in6.self)
             sin6_p.pointee = sin6
         }
+    }
+    
+    /// Create `sockaddr_strorage` containing result of BSD functions such as `getsockname`, `getpeername`
+    /// - Rarameters:
+    ///     - body: Closure that takes a pointer to the memory buffer to place
+    ///             the returned sockaddr and a pointer to socklen_t variable
+    ///             to place returned sockaddr length.
+    /// - Returns: `sockaddr_storage` with results of `body` execution.
+    public init(_ body: (
+        UnsafeMutablePointer<sockaddr>,
+        UnsafeMutablePointer<socklen_t>
+    ) throws -> Int32) rethrows {
+        self.init()
+        var length = socklen_t(MemoryLayout<sockaddr_storage>.size)
+        try withUnsafeMutableBytes(of: &self) {
+            let sa_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr.self)
+            _ = try body(sa_p, &length)
+        }
+        assert(ss_len == length)
     }
 }
 
@@ -238,8 +257,8 @@ extension sockaddr_storage {
         }
     }
     
-    /// Executes functions with a `sockaddr` pointer as input parameter;
-    /// such as `bind`, `connect` or `sendto`.
+    /// Executes BSD functions such as `bind`, `connect` or `sendto` 
+    /// with a `sockaddr` pointer as input parameter;
     /// - parameter body: A closure that takes a sockaddr pointer and sockaddr length as input parameters.
     /// - Returns: the return value of the `body`.
     @discardableResult

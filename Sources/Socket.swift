@@ -148,14 +148,14 @@ extension Socket {
     
     /// Address bound to socket
     public var localAddress: sockaddr_storage? {
-        try? execute { sa_p, length_p in
+        try? sockaddr_storage { sa_p, length_p in
             try bsd(getsockname(self.handle, sa_p, length_p))
         }
     }
 
     ///address to which the socket is connected
     public var remoteAddress: sockaddr_storage? {
-        try? execute { sa_p, length_p in
+        try? sockaddr_storage { sa_p, length_p in
             try bsd(getpeername(self.handle, sa_p, length_p))
         }
     }
