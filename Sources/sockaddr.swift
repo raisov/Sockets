@@ -14,7 +14,8 @@ extension in_addr {
     public static let broadcast = Self(s_addr: INADDR_BROADCAST.bigEndian)
     public var isWildcard: Bool {self == Self.wildcard}
     public var isLoopback: Bool {self == Self.loopback}
-    public var isMulticast: Bool {return (self.s_addr & 0xf0) == 0xe0}
+    public var isMulticast: Bool {s_addr & 0xf0 == 0xe0}
+    public var isLinkLocal: Bool {s_addr & 0xffff == IN_LINKLOCALNETNUM.bigEndian}
 
     public func with(port: UInt16 = 0) -> sockaddr_in {
         return sockaddr_in(self, port: port)
@@ -64,6 +65,7 @@ extension sockaddr_in {
     public var isWildcard: Bool {isWellFormed && sin_addr.isWildcard }
     public var isLoopback: Bool {isWellFormed && sin_addr.isLoopback }
     public var isMulticast: Bool {isWellFormed && sin_addr.isMulticast }
+    public var isLinkLocal: Bool {isWellFormed && sin_addr.isLinkLocal }
 }
 
 extension sockaddr_in {
