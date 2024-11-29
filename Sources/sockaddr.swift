@@ -32,9 +32,9 @@ extension in6_addr {
     public static let family = AF_INET6
     public static let wildcard = in6addr_any
     public static let loopback = in6addr_loopback
-    public var isWildcard: Bool {return self == in6addr_any}
-    public var isLoopback: Bool {return self == in6addr_loopback}
-    public var isMulticast: Bool {return self.__u6_addr.__u6_addr8.0 == 0xff}
+    public var isWildcard: Bool {self == in6addr_any}
+    public var isLoopback: Bool {self == in6addr_loopback}
+    public var isMulticast: Bool {self.__u6_addr.__u6_addr8.0 == 0xff}
     public var isLinkLocal: Bool { (self.__u6_addr.__u6_addr16.0 & 0xc0fe) == 0x80fe}
     
 
@@ -54,11 +54,12 @@ extension in6_addr: @retroactive Equatable {
 
 extension sockaddr_in {
     public static let family = in_addr.family
+    public static let size = MemoryLayout<Self>.size
     public var family: Int32 { numericCast(sin_family) }
     
     public var isWellFormed: Bool {
         family == Self.family &&
-        sin_len <= MemoryLayout<Self>.size &&
+        sin_len <= Self.size &&
         sin_len > MemoryLayout<sockaddr_in>.offset(of: \.sin_addr)!
     }
     
@@ -70,7 +71,7 @@ extension sockaddr_in {
 
 extension sockaddr_in {
     public init(_ address: in_addr = in_addr(s_addr: INADDR_ANY), port: UInt16) {
-        self.init(sin_len: __uint8_t(MemoryLayout<sockaddr_in>.size),
+        self.init(sin_len: __uint8_t(Self.size),
                   sin_family: sa_family_t(Self.family),
                   sin_port: port.bigEndian,
                   sin_addr: address,
@@ -82,9 +83,10 @@ extension sockaddr_in {
 extension sockaddr_in6 {
     public static let family = in6_addr.family
     public var family: Int32 { numericCast(sin6_family) }
-    
+    public static let size = MemoryLayout<Self>.size
+
     public var isWellFormed: Bool {
-        family == Self.family && sin6_len == MemoryLayout<Self>.size
+        family == Self.family && sin6_len == Self.size
     }
     
     public var isWildcard: Bool {isWellFormed && sin6_addr.isWildcard }
@@ -95,7 +97,7 @@ extension sockaddr_in6 {
 
 extension sockaddr_in6 {
     public init(_ address: in6_addr = in6addr_any, port: UInt16, flowinfo: UInt32 = 0, scope: UInt32 = 0) {
-        self.init(sin6_len: __uint8_t(MemoryLayout<sockaddr_in6>.size),
+        self.init(sin6_len: __uint8_t(Self.size),
                   sin6_family: sa_family_t(Self.family),
                   sin6_port: port.bigEndian,
                   sin6_flowinfo: flowinfo,
@@ -108,12 +110,15 @@ extension sockaddr_in6 {
 extension sockaddr_dl {
     public static let family = AF_LINK
     public var family: Int32 { numericCast(sdl_family) }
+    public static let size = MemoryLayout<Self>.size
+    
     public var isWellFormed: Bool {
         family == Self.family &&
-        sdl_len <= MemoryLayout<Self>.size &&
+        sdl_len <= Self.size &&
         sdl_len >= headerSize + Int(sdl_alen + sdl_nlen + sdl_slen)
     }
-    var headerSize: Int {return MemoryLayout<sockaddr_dl>.size - MemoryLayout.size(ofValue: self.sdl_data)}
+    
+    var headerSize: Int { Self.size - MemoryLayout.size(ofValue: sdl_data) }
 }
 
 extension sockaddr_dl {
@@ -169,7 +174,7 @@ extension UnsafePointer where Pointee == sockaddr {
         return withUnsafeMutablePointer(to: &sin) {
             let sin_p = UnsafeMutableRawPointer($0)
             sin_p.copyMemory(from: self, byteCount: Int(pointee.sa_len))
-            sin_p.assumingMemoryBound(to: sockaddr_in.self).pointee.sin_len = numericCast(MemoryLayout<sockaddr_in>.size)
+            sin_p.assumingMemoryBound(to: sockaddr_in.self).pointee.sin_len = numericCast(sockaddr_in.size)
             return sin_p.assumingMemoryBound(to: sockaddr_in.self).pointee
         }
     }
@@ -204,6 +209,10 @@ extension UnsafeMutablePointer where Pointee == sockaddr {
 // MARK: - sockaddr_storage extensions
 
 extension sockaddr_storage {
+    public static let size = MemoryLayout<Self>.size
+}
+
+extension sockaddr_storage {
     public init(_ sin: sockaddr_in) {
         self.init()
         withUnsafeMutableBytes(of: &self) {
@@ -231,7 +240,7 @@ extension sockaddr_storage {
         UnsafeMutablePointer<socklen_t>
     ) throws -> Int32) rethrows {
         self.init()
-        var length = socklen_t(MemoryLayout<sockaddr_storage>.size)
+        var length = socklen_t(Self.size)
         try withUnsafeMutableBytes(of: &self) {
             let sa_p = $0.baseAddress!.assumingMemoryBound(to: sockaddr.self)
             _ = try body(sa_p, &length)
