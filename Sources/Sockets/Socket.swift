@@ -5,89 +5,13 @@
 
 import Darwin.POSIX
 import struct Foundation.Data
+import Definitions
 
 /// Simply wraps the raw socket handle to create
 /// namespace for socket related functions
 /// and for using Swift memory management
 /// to control socket life time.
 public class Socket {
-
-    public enum SocketType: RawRepresentable {
-        case stream, datagram, raw, seqpacket
-        public init?(rawValue: Int32) {
-            switch rawValue {
-            case SOCK_STREAM: self = .stream
-            case SOCK_DGRAM: self = .datagram
-            case SOCK_RAW: self = .raw
-            case SOCK_SEQPACKET: self = .seqpacket
-            default:
-                return nil
-            }
-        }
-        public var rawValue: Int32 {
-            switch self {
-            case .stream: return SOCK_STREAM
-            case .datagram: return SOCK_DGRAM
-            case .raw: return SOCK_RAW
-            case .seqpacket: return SOCK_SEQPACKET
-            }
-        }
-    }
-    
-    public enum AddressFamily: RawRepresentable {
-        /// Unix pipe
-        case unix
-        /// IPv4
-        case inet
-        /// IPv6
-        case inet6
-        /// Link layer interface
-        case link
-    
-        public init?(rawValue: Int32) {
-            switch rawValue {
-            case AF_UNIX: self = .unix
-            case AF_INET: self = .inet
-            case AF_INET6: self = .inet6
-            case AF_LINK: self = .link
-            default:
-                return nil
-            }
-        }
-    
-        public var rawValue: Int32 {
-            switch self {
-            case .unix: return AF_UNIX
-            case .inet: return AF_INET
-            case .inet6: return AF_INET6
-            case .link: return AF_LINK
-            }
-        }
-    }
-
-    public enum IPProtocol: RawRepresentable {
-        case tcp, udp, icmp, icmpv6
-        public init?(rawValue: Int32) {
-            switch rawValue {
-            case IPPROTO_TCP: self = .tcp
-            case IPPROTO_UDP: self = .udp
-            case IPPROTO_ICMP: self = .icmp
-            case IPPROTO_ICMPV6: self = .icmpv6
-            default:
-                return nil
-            }
-        }
-        public var rawValue: Int32 {
-            switch self {
-            case .tcp: return IPPROTO_TCP
-            case .udp: return IPPROTO_UDP
-            case .icmp: return IPPROTO_ICMP
-            case .icmpv6: return IPPROTO_ICMPV6
-            }
-        }
-    }
-
-
 
     /// Native socket handle
     fileprivate let handle: Int32
