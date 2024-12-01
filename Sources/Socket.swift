@@ -65,7 +65,7 @@ public class Socket {
         }
     }
 
-    public enum `Protocol`: RawRepresentable {
+    public enum IPProtocol: RawRepresentable {
         case tcp, udp, icmp, icmpv6
         public init?(rawValue: Int32) {
             switch rawValue {
@@ -108,7 +108,7 @@ public class Socket {
     ///                 determined by the values of `type` and` family`.
     /// - Throws: SocketError.
     /// - SeeAlso: man 2 socket.
-    public init(family: AddressFamily, type: SocketType = .datagram, protocol: Protocol? = nil) throws {
+    public init(family: AddressFamily, type: SocketType = .datagram, protocol: IPProtocol? = nil) throws {
         self.handle = try bsd(Darwin.socket(family.rawValue, type.rawValue, `protocol`?.rawValue ?? 0))
     }
 
