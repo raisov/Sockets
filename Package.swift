@@ -9,10 +9,12 @@ let package = Package(
     products: [
         .library(
             name: "Sockets",
-            targets: ["Sockets", "Definitions"]),
+            targets: ["Sockets", "AddressFamily", "IPProtocol", "SocketType"]),
     ],
     targets: [
-        .target(name: "Definitions"),
-        .target(name: "Sockets", dependencies: ["Definitions"]),
+        .target(name: "AddressFamily"),
+        .target(name: "IPProtocol"),
+        .target(name: "SocketType"),
+        .target(name: "Sockets", dependencies: ["AddressFamily", "IPProtocol", "SocketType"]),
     ]
 )

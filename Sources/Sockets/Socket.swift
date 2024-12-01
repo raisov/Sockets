@@ -5,7 +5,9 @@
 
 import Darwin.POSIX
 import struct Foundation.Data
-import Definitions
+import AddressFamily
+import IPProtocol
+import SocketType
 
 /// Simply wraps the raw socket handle to create
 /// namespace for socket related functions
