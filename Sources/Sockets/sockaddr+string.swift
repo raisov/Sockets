@@ -183,7 +183,6 @@ public func getInternetAddresses(
             withUnsafeMutablePointer(to: &ss) {
                 let ss_p = UnsafeMutableRawPointer($0)
                 ss_p.copyMemory(from: sa_p, byteCount: min(Int(sa_p.pointee.sa_len), Int(SOCK_MAXADDRLEN)))
-                return ss_p.assumingMemoryBound(to: sockaddr_storage.self).pointee
             }
             addresses.append(ss)
         }
